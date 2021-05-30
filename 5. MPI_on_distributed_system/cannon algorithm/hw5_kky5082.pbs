@@ -1,0 +1,69 @@
+#!/bin/bash
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#	
+# The PBS directives
+
+#-#-# The Allocation being submitted against
+#PBS -A open
+# You can submit against your allocation if more time is available.  See the onboarding document for information regarding how many processors you are able to request at a time for hte size of your allocation.  This is similar to the -q queuename on the legacy machines.  If no allocation is listed, your job will be placed on the open queue until your open limits have been reached.  In order to ensure your job goes to the open queue, please use the -A open directive.
+
+#-#-# Name of the job
+#PBS -N hw5
+# This is the name given to the job.  It is used for the name of the output and error files and is visibile when you use qstat to check the status of your job.
+
+#-#-# Amount of wall time
+#PBS -l walltime=01:00:00
+# The time required is in HH:MM:SS format. The wall time is the amount of actual time the job runs and isn't related to computational time (the actual time times the number of cores being used.) 
+
+#-#-# Number of processors, their nodal spread and the type of node
+#PBS -l nodes=16:ppn=1
+# This is the the amount of processors we ask for.  Note the different ways of asking for 4 processors: Putting them all on one node can boost the performance of  a job as the communication is on one node while allowing the scheduler to spread them among various processors may shorten the queue wait time.  Note that if you are on one node only, you can use the pbs directive -l npcus=X. 
+
+#-#-# Memory Request
+#PBS -l pmem=4gb
+# We ask for 1 GB of RAM per task (pmem).  Also available are mem (total memory), vmem (virtual memory) and pvmem (virtual memory per task).  The mem option should only be used on single node jobs. 
+
+#-#-# Combine the stdout and stderr into one file
+#PBS -j oe
+
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#	
+# Prepare for, compile and run the job
+//author Kangdong Yuan
+#-#-# This fixes common MPI errors
+export DAPL_DBG_TYPE="0"
+
+#-#-# Echo
+echo "#-#-#Job started on `hostname` at `date` "
+echo This job runs on the following processors:
+echo `cat $PBS_NODEFILE`
+# We output the job start time and the processor names to the output file. This can be helpful for debugging if something goes wrong.
+
+#-#-# Modules
+module purge
+module load intel
+module load gcc
+module load impi
+# We load the modules required.  Note that loading the same modules as were used when the code was compiled is required for proper execution. We include the purge, but would comment it out if the -v directive is used with qsub to pass along the environment variables.  Please note that there is a default module that would be loaded for gcc but it is better to used the actual module rather than the default in case the default changes.
+
+ulimit -s 10240
+
+#-#-# Directory
+echo "Current directory is `pwd`"
+cd $PBS_O_WORKDIR
+echo "Current directory is `pwd`"
+# The directory you are put in to start with is your home directory. You can change to the directory directly (cd /storage/home/...) or change to the directory you submitted from using the PBS_O_WORKDIR environment variable.
+
+#-#-# Compile
+mpicc -o hw5_kky5082.out hw5_kky5082.cpp 
+# We compile the code within the submission script here, but this is not required.  You can compile with a previous job (or on ACI-I) and just run code within jobs.  Be sure the modules used whdn compiling and running are the same.
+
+#-#-# Echo
+echo "#-#-#Compilation completed and execution started at `date`"
+# Output the time here for possible debugging purposes.
+
+#-#-# Run
+mpirun -np 16 ./hw5_kky5082.out > log.hw5_kky5082.out_$PBS_JOBID
+
+#-#-# Echo
+echo "#-#-#Job Ended at `date`"
+# Output the time here for possible debugging purposes.
+
