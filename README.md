@@ -1,1 +1,1 @@
-# parallel-computing-in-C-
+# parallel-computing-in-C++
